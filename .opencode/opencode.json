@@ -14,6 +14,16 @@
         "glm-5.3": {
           "name": "GLM-5.3",
           "reasoning": true,
+          "attachment": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
           "limit": {
             "context": 1000000,
             "output": 131072
@@ -33,6 +43,16 @@
         "glm-5.3-flash": {
           "name": "GLM-5.3-Flash",
           "reasoning": true,
+          "attachment": true,
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          },
           "limit": {
             "context": 1048576,
             "output": 131072
