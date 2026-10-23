@@ -20,6 +20,10 @@ jobs:
         with:
           fetch-depth: 1
           persist-credentials: false
+      - name: Setup git identity
+        run: |
+          git config user.name "opencode-agent"
+          git config user.email "285012672+ddiinngg6-star@users.noreply.github.com"
       - name: Run OpenCode
         uses: anomalyco/opencode/github@latest
         env:
@@ -44,6 +48,10 @@ jobs:
         with:
           fetch-depth: 1
           persist-credentials: false
+      - name: Setup git identity
+        run: |
+          git config user.name "opencode-agent"
+          git config user.email "285012672+ddiinngg6-star@users.noreply.github.com"
       - name: Run OpenCode (vision)
         uses: anomalyco/opencode/github@latest
         env:
