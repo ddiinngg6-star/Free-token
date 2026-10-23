@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 平台免费/优惠额度记录册</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f6f8;
+    color: #24292f;
+    padding: 32px 16px;
+  }
+  .container { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  .subtitle { color: #57606a; font-size: 14px; margin-bottom: 24px; }
+  .legend { font-size: 13px; color: #57606a; margin-bottom: 12px; }
+  .legend span { display: inline-flex; align-items: center; margin-right: 16px; }
+  .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 6px; }
+  .dot-danger { background: #ffebe9; border: 1px solid #cf222e; }
+  .dot-expired { background: #eaeef2; border: 1px solid #8c959f; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  th, td { padding: 12px 14px; text-align: left; font-size: 14px; border-bottom: 1px solid #d0d7de; vertical-align: top; }
+  th { background: #f6f8fa; font-weight: 600; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  td a { color: #0969da; text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; white-space: nowrap; }
+  .badge-active { background: #dafbe1; color: #1a7f37; }
+  .badge-used-up { background: #fff8c5; color: #9a6700; }
+  .badge-cancelled { background: #eaeef2; color: #57606a; }
+  .badge-type-free { background: #ddf4ff; color: #0969da; }
+  .badge-type-trial { background: #fbefff; color: #8250df; }
+  .badge-type-discount { background: #ffebf0; color: #bf3989; }
+  tr.row-danger td { background: #ffebe9; color: #cf222e; }
+  tr.row-danger td a { color: #cf222e; }
+  tr.row-expired td { background: #eaeef2; color: #8c959f; text-decoration: line-through; }
+  tr.row-expired td a { color: #8c959f; }
+  tr.row-expired .badge { filter: grayscale(1); opacity: .7; }
+  .notes { font-size: 12px; color: #6e7781; min-width: 160px; }
+  tr.row-danger .notes { color: #a40e26; }
+  .empty { text-align: center; color: #57606a; padding: 40px 0 !important; }
+  #error { display: none; max-width: 1080px; margin: 0 auto 24px; padding: 14px 18px; background: #fff8c5; border: 1px solid #d4a72c; border-radius: 8px; font-size: 14px; }
+  #error code { background: rgba(0,0,0,.06); padding: 2px 6px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div id="error"></div>
+<div class="container">
+  <h1>AI 平台免费/优惠额度记录册</h1>
+  <p class="subtitle">统一记录各家 AI 平台的免费 token、折扣、试用额度，数据来源 tokens.json</p>
+  <div class="legend">
+    <span><i class="dot dot-danger"></i>7 天内到期</span>
+    <span><i class="dot dot-expired"></i>已过期（置底）</span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>名称</th>
+        <th>类型</th>
+        <th>额度</th>
+        <th>链接</th>
+        <th>领取日期</th>
+        <th>过期时间</th>
+        <th>状态</th>
+        <th>备注</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+<script>
+const TYPE_LABEL = { free: '免费额度', trial: '试用', discount: '折扣' };
+const STATUS_LABEL = { active: '生效中', 'used-up': '已用完', cancelled: '已取消' };
+
+function todayStr() {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+function diffDays(a, b) {
+  return Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000);
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderRow(t, rowClass, expireText) {
+  const type = TYPE_LABEL[t.type] || esc(t.type);
+  const typeCls = ['free','trial','discount'].includes(t.type) ? `badge-type-${t.type}` : '';
+  const status = STATUS_LABEL[t.status] || esc(t.status);
+  const statusCls = ['active','used-up','cancelled'].includes(t.status) ? `badge-${t.status}` : '';
+  const link = t.link ? `<a href="${esc(t.link)}" target="_blank" rel="noopener">打开</a>` : '—';
+  return `<tr class="${rowClass}">
+    <td>${esc(t.name)}</td>
+    <td><span class="badge ${typeCls}">${type}</span></td>
+    <td>${esc(t.amount || '—')}</td>
+    <td>${link}</td>
+    <td>${esc(t.claimed_date || '—')}</td>
+    <td>${expireText}</td>
+    <td><span class="badge ${statusCls}">${status}</span></td>
+    <td class="notes">${esc(t.notes || '')}</td>
+  </tr>`;
+}
+
+async function main() {
+  const tbody = document.getElementById('tbody');
+  const err = document.getElementById('error');
+  let tokens;
+  try {
+    const res = await fetch('tokens.json');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    tokens = await res.json();
+  } catch (e) {
+    err.style.display = 'block';
+    err.innerHTML = `加载 tokens.json 失败（${esc(e.message)}）。请勿直接双击打开本页，先在项目目录运行 <code>python3 -m http.server 8000</code>，再访问 <code>http://localhost:8000</code>`;
+    tbody.innerHTML = '<tr><td colspan="8" class="empty">数据加载失败</td></tr>';
+    return;
+  }
+  const today = todayStr();
+  const active = [];
+  const expired = [];
+  for (const t of tokens) {
+    if (t.expire_date && diffDays(today, t.expire_date) < 0) expired.push(t);
+    else active.push(t);
+  }
+  const byDateAsc = (a, b) => (a.expire_date || '9999-12-31').localeCompare(b.expire_date || '9999-12-31');
+  active.sort(byDateAsc);
+  expired.sort(byDateAsc);
+  let html = '';
+  for (const t of active) {
+    let cls = '', text = esc(t.expire_date || '永久有效');
+    if (t.expire_date) {
+      const left = diffDays(today, t.expire_date);
+      if (left <= 7) { cls = 'row-danger'; text += `（剩 ${left} 天）`; }
+    }
+    html += renderRow(t, cls, text);
+  }
+  for (const t of expired) {
+    html += renderRow(t, 'row-expired', `${esc(t.expire_date)}（已过期）`);
+  }
+  tbody.innerHTML = html || '<tr><td colspan="8" class="empty">暂无记录</td></tr>';
+}
+
+main();
+</script>
+</body>
+</html>
