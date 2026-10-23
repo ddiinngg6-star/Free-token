@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 平台免费/优惠额度记录册</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      color: #24292f;
+      background: #fff;
+    }
+    h1 {
+      font-size: 24px;
+      margin: 0 0 8px;
+    }
+    .summary {
+      color: #57606a;
+      font-size: 14px;
+      margin: 0 0 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    th,
+    td {
+      border: 1px solid #d0d7de;
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f6f8fa;
+      white-space: nowrap;
+    }
+    tbody tr:hover {
+      filter: brightness(0.97);
+    }
+    /* 7 天内到期：整行标红 */
+    tr.row-soon td {
+      background: #ffd9d9;
+      color: #a40e0e;
+    }
+    tr.row-soon a {
+      color: #a40e0e;
+    }
+    /* 已过期：灰色置底 */
+    tr.row-expired td {
+      background: #f0f0f0;
+      color: #9a9a9a;
+    }
+    tr.row-expired a {
+      color: #9a9a9a;
+    }
+    a {
+      color: #0969da;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .legend {
+      font-size: 13px;
+      color: #57606a;
+      margin-top: 12px;
+    }
+    .legend .chip {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 10px;
+      margin: 0 4px 0 12px;
+    }
+    .chip-soon {
+      background: #ffd9d9;
+      color: #a40e0e;
+    }
+    .chip-expired {
+      background: #f0f0f0;
+      color: #9a9a9a;
+    }
+    .error {
+      display: none;
+      margin-top: 16px;
+      padding: 12px 16px;
+      border: 1px solid #ffa198;
+      background: #fff1f0;
+      color: #a40e0e;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <h1>AI 平台免费/优惠额度记录册</h1>
+  <p class="summary" id="summary">加载中…</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>平台 / 活动</th>
+        <th>类型</th>
+        <th>额度</th>
+        <th>领取日期</th>
+        <th>过期时间</th>
+        <th>剩余天数</th>
+        <th>状态</th>
+        <th>备注</th>
+        <th>链接</th>
+      </tr>
+    </thead>
+    <tbody id="token-body"></tbody>
+  </table>
+
+  <p class="legend">
+    图例：
+    <span class="chip chip-soon">7 天内到期</span>
+    <span class="chip chip-expired">已过期（置底）</span>
+  </p>
+
+  <div class="error" id="error"></div>
+
+  <script>
+    var TYPE_LABELS = {
+      "free-token": "免费 Token",
+      "discount": "折扣",
+      "trial": "试用额度"
+    };
+    var STATUS_LABELS = {
+      "unclaimed": "未领取",
+      "active": "使用中",
+      "used-up": "已用完",
+      "expired": "已过期"
+    };
+    var MS_PER_DAY = 24 * 60 * 60 * 1000;
+    var WARN_DAYS = 7;
+
+    function startOfDay(date) {
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+    }
+
+    function daysLeft(expireDate, todayMs) {
+      return Math.round((Date.parse(expireDate) - todayMs) / MS_PER_DAY);
+    }
+
+    function fmtDate(str) {
+      return str || "—";
+    }
+
+    function esc(str) {
+      return String(str == null ? "" : str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function render(tokens) {
+      var todayMs = startOfDay(new Date());
+
+      var isExpired = function (t) {
+        return !!t.expire_date && daysLeft(t.expire_date, todayMs) < 0;
+      };
+      var isSoon = function (t) {
+        var d = daysLeft(t.expire_date, todayMs);
+        return !!t.expire_date && d >= 0 && d <= WARN_DAYS;
+      };
+
+      // 未过期在前（按 expire_date 升序，长期有效排最后），已过期灰色置底（按 expire_date 降序）
+      var active = tokens
+        .filter(function (t) { return !isExpired(t); })
+        .sort(function (a, b) {
+          if (!a.expire_date) return 1;
+          if (!b.expire_date) return -1;
+          return a.expire_date < b.expire_date ? -1 : a.expire_date > b.expire_date ? 1 : 0;
+        });
+      var expired = tokens
+        .filter(isExpired)
+        .sort(function (a, b) {
+          return a.expire_date > b.expire_date ? -1 : a.expire_date < b.expire_date ? 1 : 0;
+        });
+
+      var soonCount = tokens.filter(isSoon).length;
+      var expiredCount = expired.length;
+      document.getElementById("summary").textContent =
+        "共 " + tokens.length + " 条记录 · 7 天内到期 " + soonCount + " 条 · 已过期 " + expiredCount + " 条";
+
+      var html = "";
+      active.concat(expired).forEach(function (t) {
+        var cls = isExpired(t) ? "row-expired" : isSoon(t) ? "row-soon" : "";
+        var left;
+        if (!t.expire_date) {
+          left = "长期有效";
+        } else {
+          var d = daysLeft(t.expire_date, todayMs);
+          left = d < 0 ? "已过期 " + Math.abs(d) + " 天" : "剩 " + d + " 天";
+        }
+        var typeLabel = TYPE_LABELS[t.type] || t.type;
+        var statusLabel = STATUS_LABELS[t.status] || t.status;
+        html +=
+          '<tr class="' + cls + '">' +
+          "<td>" + esc(t.name) + "</td>" +
+          "<td>" + esc(typeLabel) + "</td>" +
+          "<td>" + esc(t.amount) + "</td>" +
+          "<td>" + esc(fmtDate(t.claimed_date)) + "</td>" +
+          "<td>" + esc(fmtDate(t.expire_date)) + "</td>" +
+          "<td>" + esc(left) + "</td>" +
+          "<td>" + esc(statusLabel) + "</td>" +
+          "<td>" + esc(t.notes || "") + "</td>" +
+          '<td><a href="' + esc(t.link) + '" target="_blank" rel="noopener">访问</a></td>' +
+          "</tr>";
+      });
+      document.getElementById("token-body").innerHTML = html;
+    }
+
+    function showError(message) {
+      var el = document.getElementById("error");
+      el.style.display = "block";
+      el.textContent = message;
+      document.getElementById("summary").textContent = "加载失败";
+    }
+
+    fetch("tokens.json")
+      .then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      .then(render)
+      .catch(function () {
+        showError("无法读取 tokens.json。若直接双击打开本页（file:// 协议），浏览器会拦截请求，请通过本地 HTTP 服务打开，例如：python3 -m http.server 8000");
+      });
+  </script>
+</body>
+</html>
