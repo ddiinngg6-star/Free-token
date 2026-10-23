@@ -28,7 +28,7 @@ jobs:
         with:
           model: zhipu/glm-5.3
           use_github_token: true
-          # 想用更高思考挡位时，把下面这行开头注释去掉：
+          # 思考挡位可改：low / medium / high
           variant: high
   opencode-vision:
     if: |
@@ -51,5 +51,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           model: zhipu/glm-5.3-flash
+          variant: high
           use_github_token: true
           mentions: /ocv
