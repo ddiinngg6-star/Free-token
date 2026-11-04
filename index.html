@@ -5,6 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI 平台免费/优惠额度记录册</title>
   <style>
+    :root {
+      color-scheme: light dark;
+      --fg: #24292f;
+      --muted: #57606a;
+      --bg: #ffffff;
+      --line: #d0d7de;
+      --head: #f6f8fa;
+      --link: #0969da;
+      --soon-bg: #ffd9d9;
+      --soon-fg: #a40e0e;
+      --expired-bg: #f0f0f0;
+      --expired-fg: #9a9a9a;
+      --error-line: #ffa198;
+      --error-bg: #fff1f0;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fg: #e6edf3;
+        --muted: #9198a1;
+        --bg: #0d1117;
+        --line: #30363d;
+        --head: #161b22;
+        --link: #4493f8;
+        --soon-bg: #4a1518;
+        --soon-fg: #ffb3ad;
+        --expired-bg: #1c1f24;
+        --expired-fg: #6e7681;
+        --error-line: #8e1519;
+        --error-bg: #25171c;
+      }
+    }
     * {
       box-sizing: border-box;
     }
@@ -13,32 +44,38 @@
       max-width: 1100px;
       margin: 0 auto;
       padding: 24px 16px;
-      color: #24292f;
-      background: #fff;
+      color: var(--fg);
+      background: var(--bg);
     }
     h1 {
       font-size: 24px;
       margin: 0 0 8px;
     }
     .summary {
-      color: #57606a;
+      color: var(--muted);
       font-size: 14px;
       margin: 0 0 16px;
     }
+    /* 手机上表格比屏幕宽：只让表格自己左右滑，页面不横向滚动 */
+    .table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
     table {
       width: 100%;
+      min-width: 760px;
       border-collapse: collapse;
       font-size: 14px;
     }
     th,
     td {
-      border: 1px solid #d0d7de;
+      border: 1px solid var(--line);
       padding: 8px 10px;
       text-align: left;
       vertical-align: top;
     }
     th {
-      background: #f6f8fa;
+      background: var(--head);
       white-space: nowrap;
     }
     tbody tr:hover {
@@ -46,22 +83,22 @@
     }
     /* 7 天内到期：整行标红 */
     tr.row-soon td {
-      background: #ffd9d9;
-      color: #a40e0e;
+      background: var(--soon-bg);
+      color: var(--soon-fg);
     }
     tr.row-soon a {
-      color: #a40e0e;
+      color: var(--soon-fg);
     }
     /* 已过期：灰色置底 */
     tr.row-expired td {
-      background: #f0f0f0;
-      color: #9a9a9a;
+      background: var(--expired-bg);
+      color: var(--expired-fg);
     }
     tr.row-expired a {
-      color: #9a9a9a;
+      color: var(--expired-fg);
     }
     a {
-      color: #0969da;
+      color: var(--link);
       text-decoration: none;
     }
     a:hover {
@@ -69,7 +106,7 @@
     }
     .legend {
       font-size: 13px;
-      color: #57606a;
+      color: var(--muted);
       margin-top: 12px;
     }
     .legend .chip {
@@ -79,20 +116,20 @@
       margin: 0 4px 0 12px;
     }
     .chip-soon {
-      background: #ffd9d9;
-      color: #a40e0e;
+      background: var(--soon-bg);
+      color: var(--soon-fg);
     }
     .chip-expired {
-      background: #f0f0f0;
-      color: #9a9a9a;
+      background: var(--expired-bg);
+      color: var(--expired-fg);
     }
     .error {
       display: none;
       margin-top: 16px;
       padding: 12px 16px;
-      border: 1px solid #ffa198;
-      background: #fff1f0;
-      color: #a40e0e;
+      border: 1px solid var(--error-line);
+      background: var(--error-bg);
+      color: var(--soon-fg);
       border-radius: 6px;
     }
   </style>
@@ -101,6 +138,7 @@
   <h1>AI 平台免费/优惠额度记录册</h1>
   <p class="summary" id="summary">加载中…</p>
 
+  <div class="table-wrap">
   <table>
     <thead>
       <tr>
@@ -117,6 +155,7 @@
     </thead>
     <tbody id="token-body"></tbody>
   </table>
+  </div>
 
   <p class="legend">
     图例：
@@ -145,8 +184,14 @@
       return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
     }
 
+    // "YYYY-MM-DD" 按本地日期解析（Date.parse 会当成 UTC 零点，在部分时区会差一天）
+    function localDayMs(str) {
+      var p = String(str).split("-");
+      return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2])).getTime();
+    }
+
     function daysLeft(expireDate, todayMs) {
-      return Math.round((Date.parse(expireDate) - todayMs) / MS_PER_DAY);
+      return Math.round((localDayMs(expireDate) - todayMs) / MS_PER_DAY);
     }
 
     function fmtDate(str) {

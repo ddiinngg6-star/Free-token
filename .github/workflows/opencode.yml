@@ -1,3 +1,5 @@
+# 在 issue / PR 里留言 /oc（或 /opencode）让智谱 GLM-5.3 干活；/ocv 用带看图的 GLM-5.3-Flash。
+# 需要仓库 Secret：ZHIPU_API_KEY（Settings → Secrets and variables → Actions）。
 name: opencode
 on:
   issue_comment:
@@ -6,7 +8,9 @@ on:
     types: [created]
 jobs:
   opencode:
+    # 公开仓库里任何 GitHub 用户都能留言；只认仓库主人和协作者，防止陌生人用 /oc 花掉智谱额度、改仓库
     if: |
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
       (contains(github.event.comment.body, '/oc') || contains(github.event.comment.body, '/opencode')) &&
       !contains(github.event.comment.body, '/ocv')
     runs-on: ubuntu-latest
@@ -36,6 +40,7 @@ jobs:
           variant: high
   opencode-vision:
     if: |
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
       contains(github.event.comment.body, '/ocv')
     runs-on: ubuntu-latest
     permissions:
