@@ -1,0 +1,28 @@
+# 每次推送或开 PR 改到数据、页面、脚本时，自动按 AGENTS.md 的规则校验 tokens.json。
+# 不通过会在 GitHub 上显示红叉，点进去能看到是哪一条、哪个字段出错。
+name: validate
+
+on:
+  push:
+    paths:
+      - tokens.json
+      - scripts/validate.py
+      - .github/workflows/validate.yml
+  pull_request:
+    paths:
+      - tokens.json
+      - scripts/validate.py
+      - .github/workflows/validate.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: 校验 tokens.json
+        run: python3 scripts/validate.py
